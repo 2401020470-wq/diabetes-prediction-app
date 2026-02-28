@@ -1,141 +1,72 @@
 import streamlit as st
 import numpy as np
 import joblib
-import matplotlib.pyplot as plt
-from fpdf import FPDF
 
-# Load model
+# Load model & scaler
 model = joblib.load("diabetes_model.pkl")
 scaler = joblib.load("scaler.pkl")
 
-st.set_page_config(page_title="Diabetes AI System", layout="wide")
+# Page config
+st.set_page_config(page_title="Diabetes Prediction", page_icon="🩺", layout="wide")
 
-# Hide default UI
+# Custom CSS
 st.markdown("""
-<style>
-#MainMenu {visibility: hidden;}
-footer {visibility: hidden;}
-header {visibility: hidden;}
-
-body {
-    background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
-    color: white;
-}
-
-.hero {
-    text-align:center;
-    padding:60px;
-}
-
-.hero h1 {
-    font-size:60px;
-}
-
-.section-title {
-    font-size:35px;
-    font-weight:bold;
-    margin-top:30px;
-}
-
-.card {
-    background-color:#1e2a38;
-    padding:30px;
-    border-radius:15px;
-    box-shadow:0px 4px 20px rgba(0,0,0,0.4);
-}
-</style>
+    <style>
+    .main-title {
+        font-size:40px;
+        font-weight:bold;
+        color:#00B4D8;
+    }
+    .sub-text {
+        font-size:18px;
+        color:gray;
+    }
+    .result-box {
+        padding:20px;
+        border-radius:10px;
+        text-align:center;
+        font-size:22px;
+        font-weight:bold;
+    }
+    </style>
 """, unsafe_allow_html=True)
 
-# Navigation
-menu = st.sidebar.radio("Navigation", ["Home", "About", "Prediction", "Model Info"])
+st.markdown('<div class="main-title">🩺 Diabetes Prediction System</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-text">Machine Learning Based Health Risk Analysis</div>', unsafe_allow_html=True)
 
-# ---------------- HOME ----------------
-if menu == "Home":
-    st.markdown('<div class="hero">', unsafe_allow_html=True)
-    st.markdown("<h1>🩺 AI Powered Diabetes Prediction</h1>", unsafe_allow_html=True)
-    st.markdown("<p>Smart Healthcare Risk Assessment Platform</p>", unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+st.write("")
 
-    st.write("### Why This System?")
-    st.write("""
-    - Uses Logistic Regression  
-    - Feature Scaling Applied  
-    - Instant Risk Prediction  
-    - Academic ML Deployment Project  
-    """)
+# Two column layout
+col1, col2 = st.columns(2)
 
-# ---------------- ABOUT ----------------
-elif menu == "About":
-    st.markdown('<div class="section-title">About The Project</div>', unsafe_allow_html=True)
-    st.write("""
-    This system predicts diabetes risk using Machine Learning.
-    The model was trained on medical diagnostic data and optimized 
-    using Logistic Regression with feature scaling.
-    """)
+with col1:
+    preg = st.number_input("Pregnancies", min_value=0.0)
+    glucose = st.number_input("Glucose Level", min_value=0.0)
+    bp = st.number_input("Blood Pressure", min_value=0.0)
+    skin = st.number_input("Skin Thickness", min_value=0.0)
 
-# ---------------- PREDICTION ----------------
-elif menu == "Prediction":
-    st.markdown('<div class="section-title">Risk Prediction</div>', unsafe_allow_html=True)
-    st.markdown('<div class="card">', unsafe_allow_html=True)
+with col2:
+    insulin = st.number_input("Insulin Level", min_value=0.0)
+    bmi = st.number_input("BMI", min_value=0.0)
+    dpf = st.number_input("Diabetes Pedigree Function", min_value=0.0)
+    age = st.number_input("Age", min_value=0.0)
 
-    col1, col2 = st.columns(2)
+st.write("")
 
-    with col1:
-        preg = st.number_input("Pregnancies", min_value=0.0)
-        glucose = st.number_input("Glucose Level", min_value=0.0)
-        bp = st.number_input("Blood Pressure", min_value=0.0)
-        skin = st.number_input("Skin Thickness", min_value=0.0)
+if st.button("🔍 Predict Now"):
+    input_data = np.array([[preg, glucose, bp, skin, insulin, bmi, dpf, age]])
+    input_scaled = scaler.transform(input_data)
+    
+    prediction = model.predict(input_scaled)
+    probability = model.predict_proba(input_scaled)
 
-    with col2:
-        insulin = st.number_input("Insulin", min_value=0.0)
-        bmi = st.number_input("BMI", min_value=0.0)
-        dpf = st.number_input("Diabetes Pedigree Function", min_value=0.0)
-        age = st.number_input("Age", min_value=0.0)
-
-    if st.button("Analyze Risk"):
-        input_data = np.array([[preg, glucose, bp, skin, insulin, bmi, dpf, age]])
-        input_scaled = scaler.transform(input_data)
-
-        prediction = model.predict(input_scaled)
-        probability = model.predict_proba(input_scaled)
-
-        prob_diabetic = probability[0][1] * 100
-        prob_not = probability[0][0] * 100
-
-        if prediction[0] == 1:
-            st.error(f"⚠ High Risk of Diabetes ({round(prob_diabetic,2)}%)")
-        else:
-            st.success(f"✅ Low Risk of Diabetes ({round(prob_not,2)}%)")
-
-        # Probability chart
-        fig, ax = plt.subplots()
-        ax.bar(["Not Diabetic", "Diabetic"], [prob_not, prob_diabetic])
-        ax.set_ylabel("Probability (%)")
-        st.pyplot(fig)
-
-        # Generate PDF
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font("Arial", size=12)
-        pdf.cell(200, 10, txt="Diabetes Prediction Report", ln=True)
-        pdf.cell(200, 10, txt=f"Prediction: {'High Risk' if prediction[0]==1 else 'Low Risk'}", ln=True)
-        pdf.cell(200, 10, txt=f"Confidence: {round(max(prob_not, prob_diabetic),2)}%", ln=True)
-
-        pdf.output("report.pdf")
-
-        with open("report.pdf", "rb") as file:
-            st.download_button("Download Report", file, "Diabetes_Report.pdf")
-
-    st.markdown('</div>', unsafe_allow_html=True)
-
-# ---------------- MODEL INFO ----------------
-elif menu == "Model Info":
-    st.markdown('<div class="section-title">Model Information</div>', unsafe_allow_html=True)
-    st.write("""
-    Algorithm: Logistic Regression  
-    Feature Scaling: StandardScaler  
-    Deployment: Streamlit Cloud  
-    """)
-
-st.markdown("---")
-st.markdown("© 2026 AI Diabetes System | Academic ML Deployment")
+    if prediction[0] == 1:
+        st.markdown(
+            f'<div class="result-box" style="background-color:#ff4b4b;color:white;">⚠ High Risk of Diabetes<br>Confidence: {round(probability[0][1]*100,2)}%</div>',
+            unsafe_allow_html=True
+        )
+    else:
+        st.markdown(
+            f'<div class="result-box" style="background-color:#00c853;color:white;">✅ Low Risk of Diabetes<br>Confidence: {round(probability[0][0]*100,2)}%</div>',
+            unsafe_allow_html=True
+        )
