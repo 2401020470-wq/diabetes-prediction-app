@@ -1,21 +1,63 @@
 import streamlit as st
 import numpy as np
 import joblib
-from fpdf import FPDF
-from datetime import datetime
 
 # Load model and scaler
 model = joblib.load("diabetes_model.pkl")
 scaler = joblib.load("scaler.pkl")
 
-st.set_page_config(page_title="Diabetes Risk Analyzer", layout="wide")
+st.set_page_config(page_title="Diabetes Risk Dashboard", layout="wide")
 
-st.title("🩺 Diabetes Risk Analyzer")
-st.write("AI Powered Health Risk Assessment System")
+# ----------- CUSTOM STYLE -----------
+st.markdown("""
+<style>
+.big-title {
+    font-size: 42px;
+    font-weight: bold;
+    color: #00c6ff;
+}
+.subtitle {
+    font-size: 18px;
+    color: #cfcfcf;
+}
+.metric-box {
+    padding: 15px;
+    border-radius: 10px;
+    background-color: #1e1e2f;
+    margin-bottom: 10px;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ----------- HEADER -----------
+st.markdown('<div class="big-title">🩺 Diabetes Risk Detection</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">Powered by Logistic Regression — Real-time Health Risk Prediction</div>', unsafe_allow_html=True)
 
 st.markdown("---")
 
-# Input section
+# ----------- SIDEBAR -----------
+st.sidebar.title("📊 Dashboard Info")
+
+st.sidebar.markdown("### 🤖 Model")
+st.sidebar.write("Logistic Regression")
+
+st.sidebar.markdown("### 📈 Performance")
+st.sidebar.write("Accuracy: 78%")
+st.sidebar.write("Precision: 74%")
+st.sidebar.write("Recall: 72%")
+st.sidebar.write("F1 Score: 73%")
+
+st.sidebar.markdown("### 📁 Dataset")
+st.sidebar.write("Total Records: 768")
+st.sidebar.write("Diabetic: 268 (34%)")
+st.sidebar.write("Non-Diabetic: 500 (66%)")
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("Built with Streamlit & Scikit-learn")
+
+# ----------- INPUT SECTION -----------
+st.markdown("## Enter Patient Details")
+
 col1, col2 = st.columns(2)
 
 with col1:
@@ -32,79 +74,20 @@ with col2:
 
 st.markdown("---")
 
+# ----------- PREDICTION -----------
 if st.button("🔍 Predict Risk"):
 
     input_data = np.array([[preg, glucose, bp, skin, insulin, bmi, dpf, age]])
     input_scaled = scaler.transform(input_data)
 
-    prediction = model.predict(input_scaled)[0]
     probability = model.predict_proba(input_scaled)[0][1] * 100
     percentage = round(probability, 2)
 
-    st.markdown("## Result")
+    st.markdown("## 🧾 Prediction Result")
 
-    # Risk logic
     if percentage < 30:
-        risk_level = "Low Risk"
-        st.success(f"{risk_level}")
+        st.success(f"🟢 Low Risk\n\nPercentage: {percentage}%")
     elif percentage < 70:
-        risk_level = "Medium Risk"
-        st.warning(f"{risk_level}")
+        st.warning(f"🟡 Medium Risk\n\nPercentage: {percentage}%")
     else:
-        risk_level = "High Risk"
-        st.error(f"{risk_level}")
-
-    st.markdown(f"### Percentage: {percentage}%")
-
-    st.markdown("---")
-
-    # ========== PROFESSIONAL PDF ==========
-    pdf = FPDF()
-    pdf.add_page()
-
-    pdf.set_font("Arial", "B", 18)
-    pdf.cell(0, 10, "DIABETES RISK REPORT", ln=True, align="C")
-
-    pdf.ln(10)
-    pdf.set_font("Arial", size=12)
-
-    pdf.cell(0, 8, f"Report Generated: {datetime.now().strftime('%d-%m-%Y %H:%M:%S')}", ln=True)
-    pdf.ln(5)
-
-    pdf.cell(0, 8, "Patient Inputs:", ln=True)
-    pdf.ln(5)
-
-    pdf.cell(0, 8, f"Pregnancies: {preg}", ln=True)
-    pdf.cell(0, 8, f"Glucose Level: {glucose}", ln=True)
-    pdf.cell(0, 8, f"Blood Pressure: {bp}", ln=True)
-    pdf.cell(0, 8, f"Skin Thickness: {skin}", ln=True)
-    pdf.cell(0, 8, f"Insulin Level: {insulin}", ln=True)
-    pdf.cell(0, 8, f"BMI: {bmi}", ln=True)
-    pdf.cell(0, 8, f"Diabetes Pedigree Function: {dpf}", ln=True)
-    pdf.cell(0, 8, f"Age: {age}", ln=True)
-
-    pdf.ln(10)
-
-    pdf.set_font("Arial", "B", 14)
-    pdf.cell(0, 10, "Prediction Result:", ln=True)
-
-    pdf.set_font("Arial", size=12)
-    pdf.cell(0, 8, f"Risk Level: {risk_level}", ln=True)
-    pdf.cell(0, 8, f"Percentage: {percentage}%", ln=True)
-
-    pdf.ln(10)
-
-    pdf.set_font("Arial", "I", 10)
-    pdf.multi_cell(0, 6, "Disclaimer: This prediction is generated using a machine learning model "
-                         "and should not replace professional medical consultation.")
-
-    pdf_file = "diabetes_report.pdf"
-    pdf.output(pdf_file)
-
-    with open(pdf_file, "rb") as f:
-        st.download_button(
-            label="📄 Download Professional PDF Report",
-            data=f,
-            file_name="Diabetes_Risk_Report.pdf",
-            mime="application/pdf"
-        )
+        st.error(f"🔴 High Risk\n\nPercentage: {percentage}%")
