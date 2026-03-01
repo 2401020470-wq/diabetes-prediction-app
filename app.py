@@ -3,7 +3,7 @@ import numpy as np
 import joblib
 from fpdf import FPDF
 
-# Load model and scaler
+# Load model
 model = joblib.load("diabetes_model.pkl")
 scaler = joblib.load("scaler.pkl")
 
@@ -12,7 +12,7 @@ st.set_page_config(page_title="Diabetes Prediction System", layout="wide")
 st.title("🩺 Diabetes Prediction System")
 st.write("Machine Learning Based Health Risk Analysis")
 
-# Two column layout
+# Layout
 col1, col2 = st.columns(2)
 
 with col1:
@@ -35,20 +35,25 @@ if st.button("🔍 Predict Now"):
 
     prediction = model.predict(input_scaled)[0]
     probability = model.predict_proba(input_scaled)[0][1]
-    confidence = round(probability * 100, 2)
 
-    # Risk classification
-    if confidence < 40:
-        risk_level = "Low Risk"
+    # Correct percentage calculation
+    if prediction == 1:
+        percentage = round(probability * 100, 2)
+    else:
+        percentage = round((1 - probability) * 100, 2)
+
+    # Risk category
+    if percentage < 40:
+        risk = "Low Risk"
         color = "green"
-    elif confidence < 70:
-        risk_level = "Moderate Risk"
+    elif percentage < 70:
+        risk = "Moderate Risk"
         color = "orange"
     else:
-        risk_level = "High Risk"
+        risk = "High Risk"
         color = "red"
 
-    # Result Card
+    # Result display
     st.markdown(f"""
         <div style='
             background-color:#111827;
@@ -57,14 +62,14 @@ if st.button("🔍 Predict Now"):
             border-left:8px solid {color};
             text-align:center;
             margin-top:20px'>
-            <h2 style='color:{color};'>{risk_level}</h2>
-            <h3>Confidence: {confidence}%</h3>
+            <h2 style='color:{color};'>{risk}</h2>
+            <h3>Percentage: {percentage:.2f}%</h3>
         </div>
         """,
         unsafe_allow_html=True
     )
 
-    # ---------------- PDF REPORT ----------------
+    # -------- PDF REPORT --------
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
@@ -72,8 +77,8 @@ if st.button("🔍 Predict Now"):
     pdf.cell(200, 10, txt="Diabetes Risk Assessment Report", ln=True, align="C")
     pdf.ln(10)
 
-    pdf.cell(200, 10, txt=f"Risk Level: {risk_level}", ln=True)
-    pdf.cell(200, 10, txt=f"Confidence: {confidence}%", ln=True)
+    pdf.cell(200, 10, txt=f"Risk Level: {risk}", ln=True)
+    pdf.cell(200, 10, txt=f"Percentage: {percentage:.2f}%", ln=True)
     pdf.ln(5)
 
     pdf.cell(200, 10, txt="Input Details:", ln=True)
