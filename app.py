@@ -1,46 +1,22 @@
 import streamlit as st
 import numpy as np
 import joblib
+from fpdf import FPDF
 
-# Load model & scaler
+# Load model and scaler
 model = joblib.load("diabetes_model.pkl")
 scaler = joblib.load("scaler.pkl")
 
-# Page config
-st.set_page_config(page_title="Diabetes Prediction", page_icon="🩺", layout="wide")
+st.set_page_config(page_title="Diabetes Prediction System", layout="wide")
 
-# Custom CSS
-st.markdown("""
-    <style>
-    .main-title {
-        font-size:40px;
-        font-weight:bold;
-        color:#00B4D8;
-    }
-    .sub-text {
-        font-size:18px;
-        color:gray;
-    }
-    .result-box {
-        padding:20px;
-        border-radius:10px;
-        text-align:center;
-        font-size:22px;
-        font-weight:bold;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-st.markdown('<div class="main-title">🩺 Diabetes Prediction System</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-text">Machine Learning Based Health Risk Analysis</div>', unsafe_allow_html=True)
-
-st.write("")
+st.title("🩺 Diabetes Prediction System")
+st.write("Machine Learning Based Health Risk Analysis")
 
 # Two column layout
 col1, col2 = st.columns(2)
 
 with col1:
-    preg = st.number_input("Pregnancies", min_value=0.0)
+    preg = st.number_input("Pregnancies", min_value=0)
     glucose = st.number_input("Glucose Level", min_value=0.0)
     bp = st.number_input("Blood Pressure", min_value=0.0)
     skin = st.number_input("Skin Thickness", min_value=0.0)
@@ -49,24 +25,72 @@ with col2:
     insulin = st.number_input("Insulin Level", min_value=0.0)
     bmi = st.number_input("BMI", min_value=0.0)
     dpf = st.number_input("Diabetes Pedigree Function", min_value=0.0)
-    age = st.number_input("Age", min_value=0.0)
+    age = st.number_input("Age", min_value=0)
 
-st.write("")
-
+# Prediction
 if st.button("🔍 Predict Now"):
+
     input_data = np.array([[preg, glucose, bp, skin, insulin, bmi, dpf, age]])
     input_scaled = scaler.transform(input_data)
-    
-    prediction = model.predict(input_scaled)
-    probability = model.predict_proba(input_scaled)
 
-    if prediction[0] == 1:
-        st.markdown(
-            f'<div class="result-box" style="background-color:#ff4b4b;color:white;">⚠ High Risk of Diabetes<br>Confidence: {round(probability[0][1]*100,2)}%</div>',
-            unsafe_allow_html=True
-        )
+    prediction = model.predict(input_scaled)[0]
+    probability = model.predict_proba(input_scaled)[0][1]
+    confidence = round(probability * 100, 2)
+
+    # Risk classification
+    if confidence < 40:
+        risk_level = "Low Risk"
+        color = "green"
+    elif confidence < 70:
+        risk_level = "Moderate Risk"
+        color = "orange"
     else:
-        st.markdown(
-            f'<div class="result-box" style="background-color:#00c853;color:white;">✅ Low Risk of Diabetes<br>Confidence: {round(probability[0][0]*100,2)}%</div>',
-            unsafe_allow_html=True
+        risk_level = "High Risk"
+        color = "red"
+
+    # Result Card
+    st.markdown(f"""
+        <div style='
+            background-color:#111827;
+            padding:30px;
+            border-radius:15px;
+            border-left:8px solid {color};
+            text-align:center;
+            margin-top:20px'>
+            <h2 style='color:{color};'>{risk_level}</h2>
+            <h3>Confidence: {confidence}%</h3>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # ---------------- PDF REPORT ----------------
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+
+    pdf.cell(200, 10, txt="Diabetes Risk Assessment Report", ln=True, align="C")
+    pdf.ln(10)
+
+    pdf.cell(200, 10, txt=f"Risk Level: {risk_level}", ln=True)
+    pdf.cell(200, 10, txt=f"Confidence: {confidence}%", ln=True)
+    pdf.ln(5)
+
+    pdf.cell(200, 10, txt="Input Details:", ln=True)
+    pdf.cell(200, 10, txt=f"Pregnancies: {preg}", ln=True)
+    pdf.cell(200, 10, txt=f"Glucose: {glucose}", ln=True)
+    pdf.cell(200, 10, txt=f"Blood Pressure: {bp}", ln=True)
+    pdf.cell(200, 10, txt=f"Skin Thickness: {skin}", ln=True)
+    pdf.cell(200, 10, txt=f"Insulin: {insulin}", ln=True)
+    pdf.cell(200, 10, txt=f"BMI: {bmi}", ln=True)
+    pdf.cell(200, 10, txt=f"DPF: {dpf}", ln=True)
+    pdf.cell(200, 10, txt=f"Age: {age}", ln=True)
+
+    pdf.output("report.pdf")
+
+    with open("report.pdf", "rb") as f:
+        st.download_button(
+            "📄 Download PDF Report",
+            f,
+            file_name="Diabetes_Report.pdf"
         )
