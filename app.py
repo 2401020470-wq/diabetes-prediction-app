@@ -1,93 +1,80 @@
-import streamlit as st
-import numpy as np
-import joblib
+st.set_page_config(page_title="Diabetes Prediction App", page_icon="🩺", layout="centered")
 
-# Load model and scaler
-model = joblib.load("diabetes_model.pkl")
-scaler = joblib.load("scaler.pkl")
-
-st.set_page_config(page_title="Diabetes Risk Dashboard", layout="wide")
-
-# ----------- CUSTOM STYLE -----------
+# ----------- WHITE BACKGROUND + DARK TEXT THEME -----------
 st.markdown("""
 <style>
-.big-title {
-    font-size: 42px;
-    font-weight: bold;
-    color: #00c6ff;
+
+/* Main app background */
+[data-testid="stAppViewContainer"] {
+    background-color: #ffffff;
 }
-.subtitle {
-    font-size: 18px;
-    color: #cfcfcf;
+
+/* Sidebar background */
+[data-testid="stSidebar"] {
+    background-color: #f4f6f9;
 }
-.metric-box {
-    padding: 15px;
-    border-radius: 10px;
-    background-color: #1e1e2f;
-    margin-bottom: 10px;
+
+/* Make all text dark */
+html, body, p, label, div {
+    color: #111827 !important;
+    font-family: 'Segoe UI', sans-serif;
 }
+
+/* Headings dark */
+h1, h2, h3 {
+    color: #1f2937 !important;
+    font-weight: 700;
+}
+
+/* Sidebar text dark */
+[data-testid="stSidebar"] * {
+    color: #111827 !important;
+}
+
+/* Button style */
+.stButton>button {
+    background-color: #2563eb;
+    color: white !important;
+    border-radius: 8px;
+    padding: 8px 20px;
+    font-size: 15px;
+}
+
+.stButton>button:hover {
+    background-color: #1e40af;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
-# ----------- HEADER -----------
-st.markdown('<div class="big-title">🩺 Diabetes Risk Detection</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">Powered by Logistic Regression — Real-time Health Risk Prediction</div>', unsafe_allow_html=True)
+# ---------------- SIDEBAR ----------------
+st.sidebar.title("Navigation")
+page = st.sidebar.radio("Go to", ["Home", "Prediction"])
+@@ -17,17 +64,18 @@
+# Permanent About Section in Sidebar
+st.sidebar.subheader("About Project")
+st.sidebar.write("""
+📊 Dataset: PIMA Indian Diabetes Dataset  
+📊 Dataset: PIMA Indian Diabetes Dataset
+    Total Records: 768
+🤖 Model: Logistic Regression  
+🎯 Accuracy: 77.6%  
+⚙ Deployment: Streamlit Cloud  
+👩‍💻 Developed by: Aliya Afzal
+👥 Developed as a Group Project
+""")
 
-st.markdown("---")
+# ---------------- HOME PAGE ----------------
+if page == "Home":
+    st.markdown(
+        "<h1 style='text-align: center; color: #1e3a8a;'>Welcome to Diabetes Prediction System</h1>",
+        "<h1 style='text-align: center;'>Welcome to Diabetes Prediction System</h1>",
+        unsafe_allow_html=True
+    )
 
-# ----------- SIDEBAR -----------
-st.sidebar.title("📊 Dashboard Info")
+@@ -72,4 +120,4 @@
+        else:
+            st.success("✅ Low Risk: The patient is Not Diabetic.")
 
-st.sidebar.markdown("### 🤖 Model")
-st.sidebar.write("Logistic Regression")
-
-st.sidebar.markdown("### 📈 Performance")
-st.sidebar.write("Accuracy: 78%")
-st.sidebar.write("Precision: 74%")
-st.sidebar.write("Recall: 72%")
-st.sidebar.write("F1 Score: 73%")
-
-st.sidebar.markdown("### 📁 Dataset")
-st.sidebar.write("Total Records: 768")
-st.sidebar.write("Diabetic: 268 (34%)")
-st.sidebar.write("Non-Diabetic: 500 (66%)")
-
-st.sidebar.markdown("---")
-st.sidebar.markdown("Built with Streamlit & Scikit-learn")
-
-# ----------- INPUT SECTION -----------
-st.markdown("## Enter Patient Details")
-
-col1, col2 = st.columns(2)
-
-with col1:
-    preg = st.number_input("Pregnancies", min_value=0.0)
-    glucose = st.number_input("Glucose Level", min_value=0.0)
-    bp = st.number_input("Blood Pressure", min_value=0.0)
-    skin = st.number_input("Skin Thickness", min_value=0.0)
-
-with col2:
-    insulin = st.number_input("Insulin Level", min_value=0.0)
-    bmi = st.number_input("BMI", min_value=0.0)
-    dpf = st.number_input("Diabetes Pedigree Function", min_value=0.0)
-    age = st.number_input("Age", min_value=0.0)
-
-st.markdown("---")
-
-# ----------- PREDICTION -----------
-if st.button("🔍 Predict Risk"):
-
-    input_data = np.array([[preg, glucose, bp, skin, insulin, bmi, dpf, age]])
-    input_scaled = scaler.transform(input_data)
-
-    probability = model.predict_proba(input_scaled)[0][1] * 100
-    percentage = round(probability, 2)
-
-    st.markdown("## 🧾 Prediction Result")
-
-    if percentage < 30:
-        st.success(f"🟢 Low Risk\n\nPercentage: {percentage}%")
-    elif percentage < 70:
-        st.warning(f"🟡 Medium Risk\n\nPercentage: {percentage}%")
-    else:
-        st.error(f"🔴 High Risk\n\nPercentage: {percentage}%")
+    st.caption("Developed by streanmlit | BTech AI Project")
+    st.caption("BTech AI/ML Group Project | Streamlit Deployment")
